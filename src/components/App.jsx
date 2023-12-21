@@ -22,30 +22,23 @@ export class App extends Component  {
   }
 
   handleSubmit = (e) => {
-    e.preventDefault()
-    this.setState({
-      images: [],
-      currentPage: 1,
-    });
-    this.addImages()
-  }
-
-  handleLoadMore = () => {
-    this.setState({ page: this.state.page + 1 })
-    this.addImages()
-  }
-
-  handleOpenModal = (e) => {
-    console.log(e.target)
-  }
-
-  normalizedImages = imagesArray =>
-  imagesArray.map(({ id, tags, webformatURL, largeImageURL }) => {
-    return { id, tags, webformatURL, largeImageURL };
+  e.preventDefault();
+  this.setState({
+    images: [],
+    page: 1,
+  }, () => {
+    this.addImages();
   });
+}
 
-  getImages = async (search) => {
-      const response = await axios(`https://pixabay.com/api/?q=${search}&page=${this.state.page}&key=${this.KEY}&image_type=photo&orientation=horizontal&per_page=12`)
+handleLoadMore = () => {
+  this.setState(prev => ({ page: prev.page + 1}), () => {
+    this.addImages();
+  });
+}
+
+  getImages = async (search, page) => {
+      const response = await axios(`https://pixabay.com/api/?q=${search}&page=${page}&key=${this.KEY}&image_type=photo&orientation=horizontal&per_page=12`)
       return response.data
   }
 
@@ -53,16 +46,14 @@ export class App extends Component  {
     try {
       this.setState({ isLoading: true })
 
-      const data = await this.getImages(this.state.search);
+      const data = await this.getImages(this.state.search, this.state.page);
 
       if (data.hits.length === 0) {
         console.log("Images not found");
       }
 
-      const normalizedImages = this.normalizedImages(data.hits);
-
       this.setState(state => ({
-        images: [...state.images, ...normalizedImages],
+        images: [...state.images, ...data.hits],
         isLoading: false,
         error: '',
         totalPages: Math.ceil(data.totalHits / 12),
@@ -75,13 +66,12 @@ export class App extends Component  {
   };
 
   render() {
-    console.log(this.state);
     return (
     <div className="App">
         <Searchbar handleChange={this.handleChange} handleSubmit={ this.handleSubmit} />
         {this.state.isLoading && <Loader/>}
         <ImageGallery handleOpenModal={this.handleOpenModal} images={this.state.images} />
-        {this.state.images.length > 0 && <LoadMore handleLoadMore={ this.handleLoadMore} />}
+        {this.state.images.length > 0 && this.state.page !== this.state.totalPages && <LoadMore handleLoadMore={ this.handleLoadMore} />}
     </div>
   )}
 };
