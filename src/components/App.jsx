@@ -1,77 +1,102 @@
-import { Component } from "react";
-import { Searchbar } from "./Searchbar/Searchbar";
+import { useState, useEffect } from "react";
+import { SearchBar } from "./Searchbar/Searchbar";
 import { ImageGallery } from "./ImageGallery/ImageGallery";
 import axios from "axios";
 import { LoadMore } from "./Button/Button";
 import { Loader } from "./Loader/Loader";
 
-export class App extends Component  {
-  state = {
+export const App = () =>  {
+  const [state, setState] = useState({
     images: [],
     isLoading: false,
-    search: '',
+    searchValue: '',
+    searchQuery: '',
     page: 1,
     error: '',
     totalPages: 0,
+  })
+
+  const KEY = '22671510-1d0277e7650e6177903139f39'
+
+  const handleChange = ({target: {value}}) => {
+    setState((prev) => ({
+      ...prev,
+      searchValue: value
+    }))
   }
 
-  KEY = '22671510-1d0277e7650e6177903139f39'
-
-  handleChange = ({target: {value}}) => {
-    this.setState({ search: value })
-  }
-
-  handleSubmit = (e) => {
+  const handleSubmit = (e) => {
   e.preventDefault();
-  this.setState({
+    if (state.searchQuery === state.searchValue) { return; }
+  else{setState((prev) => (
+    {
+    ...prev,
+    searchQuery: state.searchValue,
     images: [],
     page: 1,
-  }, () => {
-    this.addImages();
-  });
+  }));}
 }
 
-handleLoadMore = () => {
-  this.setState(prev => ({ page: prev.page + 1}), () => {
-    this.addImages();
-  });
+
+  const handleLoadMore = () => {
+  setState(prev => ({
+    ...prev,
+    page: prev.page + 1
+  }));
 }
 
-  getImages = async (search, page) => {
-      const response = await axios(`https://pixabay.com/api/?q=${search}&page=${page}&key=${this.KEY}&image_type=photo&orientation=horizontal&per_page=12`)
+  const getImages = async (search, page) => {
+      const response = await axios(`https://pixabay.com/api/?q=${search}&page=${page}&key=${KEY}&image_type=photo&orientation=horizontal&per_page=12`)
       return response.data
   }
 
-  addImages = async () => {
-    try {
-      this.setState({ isLoading: true })
+  const addImages = async () => {
+    if (state.searchQuery === '') {
+      return; // Если searchQuery пустой, не загружать изображения
+    }
 
-      const data = await this.getImages(this.state.search, this.state.page);
+    try {
+      setState((prev) => ({
+        ...prev,
+        isLoading: true
+      }))
+
+      const data = await getImages(state.searchQuery, state.page);
 
       if (data.hits.length === 0) {
         console.log("Images not found");
       }
 
-      this.setState(state => ({
-        images: [...state.images, ...data.hits],
+      setState(prev => ({
+        ...prev,
+        images: [...prev.images, ...data.hits],
         isLoading: false,
         error: '',
         totalPages: Math.ceil(data.totalHits / 12),
       }));
     } catch (error) {
-      this.setState({ error: 'Something went wrong!' });
+      setState((prev) => ({
+        ...prev,
+        error: 'Something went wrong!'
+      }));
     } finally {
-      this.setState({ isLoading: false });
+      setState((prev) => ({
+        ...prev,
+        isLoading: false
+      }));
     }
-  };
+  }; 
 
-  render() {
-    return (
+  useEffect(() => {
+    addImages();
+  }, [state.page, state.searchQuery]);
+
+  return (
     <div className="App">
-        <Searchbar handleChange={this.handleChange} handleSubmit={ this.handleSubmit} />
-        {this.state.isLoading && <Loader/>}
-        <ImageGallery handleOpenModal={this.handleOpenModal} images={this.state.images} />
-        {this.state.images.length > 0 && this.state.page !== this.state.totalPages && <LoadMore handleLoadMore={ this.handleLoadMore} />}
+        <SearchBar handleChange={handleChange} handleSubmit={handleSubmit} />
+        {state.isLoading && <Loader/>}
+        <ImageGallery images={state.images} />
+        {state.images.length > 0 && state.page !== state.totalPages && <LoadMore handleLoadMore={handleLoadMore} />}
     </div>
-  )}
-};
+  )
+}

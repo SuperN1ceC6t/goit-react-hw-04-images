@@ -1,4 +1,4 @@
-export const Searchbar = ({handleChange, handleSubmit}) => {
+export const SearchBar = ({handleChange, handleSubmit}) => {
     
     return (
         <header className="Searchbar">
