@@ -50,9 +50,10 @@ export const App = () =>  {
       return response.data
   }
 
-  const addImages = async () => {
+  useEffect(() => {
+    const addImages = async () => {
     if (state.searchQuery === '') {
-      return; // Если searchQuery пустой, не загружать изображения
+      return; 
     }
 
     try {
@@ -87,7 +88,6 @@ export const App = () =>  {
     }
   }; 
 
-  useEffect(() => {
     addImages();
   }, [state.page, state.searchQuery]);
 
